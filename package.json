@@ -1,0 +1,26 @@
+{
+  "name": "load-balancer-proxy",
+  "version": "1.0.0",
+  "description": "test load-balancer proxy",
+  "main": "load-balancer.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/nickfloros/load-balancer-proxy.git"
+  },
+  "keywords": [
+    "nodejs",
+    "http-proxy"
+  ],
+  "author": "Nick Floros",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/nickfloros/load-balancer-proxy/issues"
+  },
+  "homepage": "https://github.com/nickfloros/load-balancer-proxy#readme",
+  "dependencies": {
+    "http-proxy": "^1.17.0"
+  }
+}
