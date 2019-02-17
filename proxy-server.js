@@ -1,6 +1,28 @@
 const arguments = process.argv.splice(2),
 	http = require('http'),
+	EventEmmiter = require('events'),
 	httpProxy = require('http-proxy');
+
+const myEvents = new EventEmmiter();
+
+const proxyInactive = 1;
+myEvents.on('targetServerActive',()=>{
+	if (proxyInactive) {
+
+	proxyInactive=0;
+	}
+});
+
+myEvent.on('targetServerDead',()=>{
+	// terminate proxy ..
+	process.exit(1);
+});
+
+// check every 45 seconds target server is active ..
+setInterval(()=>{
+		
+}, 45000); 
+
 
 //
 // Addresses to use in the round robin proxy
@@ -68,7 +90,7 @@ http.createServer(function (req, res) {
 
 	if (a[i].status) {
 		req.proxy = a[i];
-
+        // time out response 
 		res.setTimeout(a[i].proxyTimeout,(a)=>{
 			res.timeout = 1;
 		});
@@ -79,7 +101,6 @@ http.createServer(function (req, res) {
 	console.log(`post to ${a[i].target}`);
 	// peek next one ..
 	i = (i + 1) % addresses.length;
-
 
 }).listen(arguments[0] || 8000);
 
