@@ -1,4 +1,4 @@
-const arguments = process.argv.splice(2),
+const b = process.argv.splice(2),
 	http = require('http'),
 	httpProxy = require('http-proxy');
 
@@ -60,7 +60,8 @@ proxy.on('error', (err, req, res) => {
 
 http.createServer(function (req, res) {
 	let inactive = 0;
-
+	
+	const htime = process.hrtime();
 	// find active instance ..
 	while (!a[i].status && inactive < a.length) {
 		i = (i + 1) % addresses.length;
@@ -74,12 +75,17 @@ http.createServer(function (req, res) {
 		});
 	
 		proxy.web(req, res, a[i]);
+
+		res.on('finish',(st)=>{
+			const hdiff = process.hrtime(htime);
+			var utc = new Date().toJSON();//.slice(0,10).replace(/-/g,'/');
+
+			console.log(`${utc}, ${req.url},${req.method},${res.statusCode},${hdiff[0]*1000 + hdiff[1]/1000000} ms `);
+		});
 	}
-	
-	console.log(`post to ${a[i].target}`);
 	// peek next one ..
 	i = (i + 1) % addresses.length;
 
 
-}).listen(arguments[0] || 8000);
+}).listen(b[0] || 8000);
 

@@ -1,62 +1,35 @@
-const arguments = process.argv.splice(2),
+const argParams = process.argv.splice(2),
 	http = require('http'),
 	EventEmmiter = require('events'),
+	HealthCheck = require('./health-check.js'),
 	httpProxy = require('http-proxy');
+
 
 const myEvents = new EventEmmiter();
 
-const proxyInactive = 1;
-myEvents.on('targetServerActive',()=>{
-	if (proxyInactive) {
+let id = 0;
 
-	proxyInactive=0;
-	}
-});
-
-myEvent.on('targetServerDead',()=>{
-	// terminate proxy ..
-	process.exit(1);
-});
-
-// check every 45 seconds target server is active ..
-setInterval(()=>{
-		
-}, 45000); 
-
-
-//
-// Addresses to use in the round robin proxy
-//
-const addresses = [
-	{
-		host: 'localhost',
-		port: 8001
-	},
-	{
-		host: 'localhost',
-		port: 8002
-	},
-	{
-		host: 'localhost',
-		port: 8003
-	}
-];
-
-const a = [{
-	id : 0,
-	status: 1,
+const proxyServers = [{
+	id : id++,
+	status: 0,
 	target: 'http://localhost:8001',
-	proxyTimeout: 2000
+	proxyTimeout: 2000,
+	path:'/res/read/rest/vehicle?vrn=NO_REG',
+	event: myEvents
 }, {
-	id : 1,
-	status: 1,
+	id : id++,
+	status: 0,
 	target: 'http://localhost:8002',
-	proxyTimeout: 2000
+	path = '/res/read/rest/vehicle?vrn=NO_REG'
+	proxyTimeout: 2000,
+	event: myEvents
 }, {
-	id : 2,
-	status: 1,
+	id : id++,
+	status: 0,
 	target: 'http://localhost:8003',
-	proxyTimeout: 2000
+	path:'/res/read/rest/vehicle?vrn=NO_REG'
+	proxyTimeout: 2000,
+	event: myEvents
 }];
 
 const proxy = httpProxy.createProxyServer();
@@ -74,33 +47,71 @@ proxy.on('error', (err, req, res) => {
 		target: req.proxy.target,
 		timeout : res.timeout || false
 	}));
-	//a[req.proxy.id].status=0;
+
+	//proxyServers[req.proxy.id].status=0;
 });
 
+// we should have only one of those ... 
+myEvents.once('serviceActive',()=>{
+	let nextServerId=0;
+	// we now start the listenning for inbound connections 
+	http.createServer(function (req, res) {
+		let inactive = 0;
 
+		// find next active instance ..
+		while (proxyServers[nextServerId].status && inactive < proxyServers.length) {
+			nextServerId = (nextServerId + 1) % proxyServers.length;
+			inactive++;
+		}
 
+		if (proxyServers[nextServerId].status) {
+			req.proxy = proxyServers[nextServerId];
+	        // time out response 
+			res.setTimeout(proxyServers[nextServerId].proxyTimeout,(a)=>{
+				res.timeout = 1;
+			});
+		
+			proxy.web(req, res, proxyServers[nextServerId]);
+		}
+		else {
+			myEvents.emit('error',{id : nextServerId});
+		}
+		
+		console.log(`post to ${proxyServers[i].target}`);
 
-http.createServer(function (req, res) {
-	let inactive = 0;
+		// peek next one ..
+		nextServerId = (nextServerId + 1) % addresses.length;
 
-	// find active instance ..
-	while (!a[i].status && inactive < a.length) {
-		i = (i + 1) % addresses.length;
+	}).listen(argParams[0] || 8000);
+});
+
+myEvents.on('error',(err)=>{
+	console.log(err);
+	process.exit(1);
+});
+
+myEvents.on('active',(msg)=>{
+	proxyServers[msg.id].status=1;
+});
+
+myEvents.on('error',(msg)=>{
+	let activeCounter=0;
+	proxyServers[msg.id].status=0;
+
+	// count number of active entries
+	a.forEach((entry)=>{
+		activeCounter += entry.status;
+	});
+
+	if (activeCounter===0) {
+		myEvents.emit('end');
 	}
 
-	if (a[i].status) {
-		req.proxy = a[i];
-        // time out response 
-		res.setTimeout(a[i].proxyTimeout,(a)=>{
-			res.timeout = 1;
-		});
-	
-		proxy.web(req, res, a[i]);
-	}
-	
-	console.log(`post to ${a[i].target}`);
-	// peek next one ..
-	i = (i + 1) % addresses.length;
+});
 
-}).listen(arguments[0] || 8000);
+myEvents.once('end',()=>{
+	// create alert ... 
 
+	// terminate 
+	process.exit(1);
+})

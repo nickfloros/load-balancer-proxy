@@ -1,26 +1,24 @@
-const http = require('http'),
-  EventEmmiter = require('events');
-
-class Counters {
-  constructor() {
-    this.success=0;
-    this.failures = 0;
-  }
-}
+const http = require('http');
 
 class HealthCheck {
-  static test(params) {
-    const testCounter = 0;
 
+  constructor(parms) {
+    this._params = params;
+    this._status = 0;
+  }
+
+  get status => this._status
+
+  set status(val) {this._status = val; }
+
+  static test(params) {
     setInterval(() => {
       const req = http.get({
         host: 'localhost',
         port: 8003,
-        path: '/'
+        path: params.path
       }, (res) => {
         let bodyChunks = [];
-
-        console.log(res.statusCode);
 
         res.on('data', (chunk) => {
           bodyChunks.push(chunk);
@@ -28,7 +26,7 @@ class HealthCheck {
 
         res.on('end', () => {
           testCounter++;
-          params.event.emit('active');
+          params.event.emit('active',{serverId:params.id});
           if (testCounter===1) {
             params.event.emit('serverActive');
           }
@@ -49,8 +47,12 @@ class HealthCheck {
       })
     }, 3000);
   }
+
 }
 
+module.exports = HealthCheck;
+
+/*
 const myEvent = new EventEmmiter();
 
 HealthCheck.test({
@@ -61,4 +63,4 @@ HealthCheck.test({
 
 myEvent.on('error',(e)=>{
   console.log(e);
-});
+});*/
