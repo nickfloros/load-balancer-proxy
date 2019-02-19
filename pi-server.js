@@ -24,7 +24,7 @@ function estimatePi() {
 let hitCounter = 0;
 // Create a basic server that responds to any request with the pi estimation
 var server = http.createServer(function (req, res) {
-  console.log(`port ${args[0]} hits : ${hitCounter} timeout : ${(args[0] === '8003' && hitCounter % 2 === 0) ? 10000 : 100}`);
+  console.log(`port ${args[0]} hits : ${hitCounter} timeout : ${(args[0] === '8004' && hitCounter % 2 === 0) ? 10000 : 100}`);
   setTimeout(() => {
     res.writeHead(200, {
       'Content-Type': 'application/json'
@@ -33,7 +33,7 @@ var server = http.createServer(function (req, res) {
       pi: estimatePi(),
       port: args[0]
     }));
-  }, (args[0] === '8003' && hitCounter % 2 === 0) ? 10000 : 100);
+  }, (args[0] === '8004' && hitCounter % 2 === 0) ? 10000 : 100);
   hitCounter++;
 });
 

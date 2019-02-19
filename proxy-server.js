@@ -1,7 +1,8 @@
 const http = require('http'),
 	EventEmmiter = require('events'),
 	HealthCheck = require('./health-check.js'),
-	httpProxy = require('http-proxy');
+	httpProxy = require('http-proxy'),
+	argParams = process.argv.splice(2);
 
 
 const myEvents = new EventEmmiter();
@@ -19,14 +20,14 @@ const proxyServers = [{
 	id: id++,
 	status: 0,
 	target: 'http://localhost:8002',
-	path = '/res/read/rest/vehicle?vrn=NO_REG'
+	path: '/res/read/rest/vehicle?vrn=NO_REG',
 	proxyTimeout: 2000,
 	event: myEvents
 }, {
 	id: id++,
 	status: 0,
 	target: 'http://localhost:8003',
-	path: '/res/read/rest/vehicle?vrn=NO_REG'
+	path: '/res/read/rest/vehicle?vrn=NO_REG',
 	proxyTimeout: 2000,
 	event: myEvents
 }];
@@ -51,16 +52,17 @@ proxy.on('error', (err, req, res) => {
 });
 
 // we should have only one of those ... 
-myEvents.once('serviceActive', () => {
+myEvents.once('proxyActive', () => {
 	let nextServerId = 0;
 	// we now start the listenning for inbound connections 
 	http.createServer(function (req, res) {
 		let inactive = 0;
 
 		// find next active instance ..
-		while (proxyServers[nextServerId].status && inactive < proxyServers.length) {
+		while (!proxyServers[nextServerId].status && inactive < proxyServers.length) {
 			nextServerId = (nextServerId + 1) % proxyServers.length;
 			inactive++;
+			console.log(`inactive server ${nextServerId} ${inactive}`);
 		}
 
 		if (proxyServers[nextServerId].status) {
@@ -73,36 +75,36 @@ myEvents.once('serviceActive', () => {
 			proxy.web(req, res, proxyServers[nextServerId]);
 		} else {
 			myEvents.emit('error', {
-				id: nextServerId
+				serverId: nextServerId
 			});
+			res.status(503).end();
 		}
 
-		console.log(`post to ${proxyServers[i].target}`);
+		console.log(`post to ${proxyServers[nextServerId].target}`);
 
 		// peek next one ..
-		nextServerId = (nextServerId + 1) % addresses.length;
+		nextServerId = (nextServerId + 1) % proxyServers.length;
 
 	}).listen(argParams[0] || 8000);
-});
 
-myEvents.on('error', (err) => {
-	console.log(err);
-	process.exit(1);
 });
 
 myEvents.on('active', (msg) => {
-	proxyServers[msg.id].status = 1;
+	proxyServers[msg.serverId].status = 1;
 });
 
 myEvents.on('error', (msg) => {
 	let activeCounter = 0;
-	proxyServers[msg.id].status = 0;
+	console.log(msg);
+	proxyServers[msg.serverId].status = 0;
+
+	console.log(JSON.stringify(msg));
 
 	// count number of active entries
-	a.forEach((entry) => {
+	proxyServers.forEach((entry) => {
 		activeCounter += entry.status;
 	});
-
+	console.log(JSON.stringify(msg), activeCounter);
 	if (activeCounter === 0) {
 		myEvents.emit('end');
 	}
@@ -114,4 +116,8 @@ myEvents.once('end', () => {
 
 	// terminate 
 	process.exit(1);
-})
+});
+
+HealthCheck.test(proxyServers[0]);
+HealthCheck.test(proxyServers[1]);
+HealthCheck.test(proxyServers[2]);
