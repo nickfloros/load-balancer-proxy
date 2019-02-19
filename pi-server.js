@@ -7,7 +7,9 @@ var http = require('http');
  * @returns {number}
  */
 function estimatePi() {
-  var n = 10000000, inside = 0, i, x, y;
+  var n = 10000000,
+    inside = 0,
+    i, x, y;
 
   for (i = 0; i < n; i++) {
     x = Math.random();
@@ -22,11 +24,16 @@ function estimatePi() {
 let hitCounter = 0;
 // Create a basic server that responds to any request with the pi estimation
 var server = http.createServer(function (req, res) {
-  console.log(`port ${args[0]} hits : ${hitCounter} timeout : ${hitCounter % 2 === 0 ? 10000 : 100}`);
+  console.log(`port ${args[0]} hits : ${hitCounter} timeout : ${(args[0] === '8003' && hitCounter % 2 === 0) ? 10000 : 100}`);
   setTimeout(() => {
-    res.writeHead(200, { 'Content-Type': 'application/json' });
-    res.end(JSON.stringify({ pi: estimatePi(), port: args[0] }));
-  }, hitCounter % 2 === 0 ? 10000 : 100);
+    res.writeHead(200, {
+      'Content-Type': 'application/json'
+    });
+    res.end(JSON.stringify({
+      pi: estimatePi(),
+      port: args[0]
+    }));
+  }, (args[0] === '8003' && hitCounter % 2 === 0) ? 10000 : 100);
   hitCounter++;
 });
 
