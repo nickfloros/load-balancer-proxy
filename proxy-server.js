@@ -51,39 +51,55 @@ proxy.on('error', (err, req, res) => {
 	//proxyServers[req.proxy.id].status=0;
 });
 
+const regTest = /(application\/(xml|json);?)/gmi;
+
+function validContentType(headers) {
+	headers.split(';')
+
+}
+
 // we should have only one of those ... 
 myEvents.once('proxyActive', () => {
 	let nextServerId = 0;
 	// we now start the listenning for inbound connections 
 	http.createServer(function (req, res) {
 		let inactive = 0;
+		const validContent = regTest.test(req.headers['content-type'] || req.headers['Content-Type']);
+		console.log(regTest.test(req.headers['content-type'] || req.headers['Content-Type']));
 
-		// find next active instance ..
-		while (!proxyServers[nextServerId].status && inactive < proxyServers.length) {
+		if (validContent) {
+
+			// find next active instance ..
+			while (!proxyServers[nextServerId].status && inactive < proxyServers.length) {
+				nextServerId = (nextServerId + 1) % proxyServers.length;
+				inactive++;
+				console.log(`inactive server ${nextServerId} ${inactive}`);
+			}
+
+			if (proxyServers[nextServerId].status) {
+				req.proxy = proxyServers[nextServerId];
+				// time out response 
+				res.setTimeout(proxyServers[nextServerId].proxyTimeout, (a) => {
+					res.timeout = 1;
+				});
+
+				proxy.web(req, res, proxyServers[nextServerId]);
+			} else {
+				myEvents.emit('error', {
+					serverId: nextServerId
+				});
+				res.statusCode = 400;
+				res.end();
+			}
+
+			console.log(`post to ${proxyServers[nextServerId].target}`);
+
+			// peek next one ..
 			nextServerId = (nextServerId + 1) % proxyServers.length;
-			inactive++;
-			console.log(`inactive server ${nextServerId} ${inactive}`);
-		}
-
-		if (proxyServers[nextServerId].status) {
-			req.proxy = proxyServers[nextServerId];
-			// time out response 
-			res.setTimeout(proxyServers[nextServerId].proxyTimeout, (a) => {
-				res.timeout = 1;
-			});
-
-			proxy.web(req, res, proxyServers[nextServerId]);
 		} else {
-			myEvents.emit('error', {
-				serverId: nextServerId
-			});
-			res.status(503).end();
+			res.statusCode = 400;
+			res.end();
 		}
-
-		console.log(`post to ${proxyServers[nextServerId].target}`);
-
-		// peek next one ..
-		nextServerId = (nextServerId + 1) % proxyServers.length;
 
 	}).listen(argParams[0] || 8000);
 
