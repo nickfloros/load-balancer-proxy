@@ -22,6 +22,9 @@
   "homepage": "https://github.com/nickfloros/load-balancer-proxy#readme",
   "dependencies": {
     "http-proxy": "^1.17.0",
-    "winston": "^2.4.4"
+    "winston": "^3.2.1"
+  },
+  "publishConfig": {
+    "registry": "http://rh0113p:7071/nexus/content/repositories/aah2-release/"
   }
 }

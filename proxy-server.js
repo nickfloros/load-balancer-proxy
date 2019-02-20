@@ -1,9 +1,31 @@
 const http = require('http'),
-	logger = require('winston'),
+	winston = require('winston'),
 	EventEmmiter = require('events'),
 	HealthCheck = require('./health-check.js'),
 	httpProxy = require('http-proxy'),
 	argParams = process.argv.splice(2);
+
+const logger = winston.createLogger({
+	level: 'info',
+	format: winston.format.logstash(),
+	defaultMeta: {
+		service: 'proxy-server'
+	},
+	transports: [
+		//
+		// - Write to all logs with level `info` and below to `combined.log` 
+		// - Write all logs error (and below) to `error.log`.
+		//
+		new winston.transports.File({
+			filename: 'proxy-server-error.log',
+			level: 'error'
+		}),
+		new winston.transports.File({
+			filename: 'proxy-server-combined.log'
+		}),
+		new winston.transports.Console()
+	]
+});
 
 const myEvents = new EventEmmiter();
 
@@ -16,7 +38,7 @@ const proxyServers = [{
 	proxyTimeout: 2000,
 	teatQuery: '/res/read/rest/vehicle?vrn=NO_REG',
 	event: myEvents,
-	genericTimeout : 5000
+	genericTimeout: 5000
 }, {
 	id: id++,
 	status: -1,
@@ -24,7 +46,7 @@ const proxyServers = [{
 	teatQuery: '/res/read/rest/vehicle?vrn=NO_REG',
 	proxyTimeout: 2000,
 	event: myEvents,
-	genericTimeout : 5000
+	genericTimeout: 5000
 }, {
 	id: id++,
 	status: -1,
@@ -32,7 +54,7 @@ const proxyServers = [{
 	teatQuery: '/res/read/rest/vehicle?vrn=NO_REG',
 	proxyTimeout: 2000,
 	event: myEvents,
-	genericTimeout : 5000
+	genericTimeout: 5000
 }];
 
 const proxy = httpProxy.createProxyServer();
@@ -142,7 +164,7 @@ myEvents.once('end', () => {
 	process.exit(1);
 });
 
-logger.info(`satrting monitor health checks`);
+logger.info(`starting monitor health checks`);
 
 HealthCheck.test(proxyServers[0]);
 HealthCheck.test(proxyServers[1]);
