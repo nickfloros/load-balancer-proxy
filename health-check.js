@@ -25,7 +25,7 @@ class HealthCheck {
       const req = http.get({
         host: url.hostname,
         port: url.port,
-        path: params.path
+        path: params.testQuery
       }, (res) => {
         let bodyChunks = [];
 
@@ -39,7 +39,9 @@ class HealthCheck {
             serverId: params.id
           });
           if (testCounter === 1) {
-            params.event.emit('proxyActive');
+            params.event.emit('proxyActive',{
+              serverId : params.id
+            });
           }
         });
 

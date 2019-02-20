@@ -21,6 +21,7 @@
   },
   "homepage": "https://github.com/nickfloros/load-balancer-proxy#readme",
   "dependencies": {
-    "http-proxy": "^1.17.0"
+    "http-proxy": "^1.17.0",
+    "winston": "^2.4.4"
   }
 }

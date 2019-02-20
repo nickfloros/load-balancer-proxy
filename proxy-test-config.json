@@ -1,0 +1,16 @@
+[{
+	"target": "http://localhost:8001",
+	"proxyTimeout": 2000,
+	"teatQuery": "/res/read/rest/vehicle?vrn=NO_REG",
+	"genericTimeout" : 5000
+}, {
+	"target": "http://localhost:8002",
+	"teatQuery": "/res/read/rest/vehicle?vrn=NO_REG",
+	"proxyTimeout": 2000,
+	"genericTimeout" : 5000
+}, {
+	"target": "http://localhost:8003",
+	"teatQuery": "/res/read/rest/vehicle?vrn=NO_REG",
+	"proxyTimeout": 2000,
+	"genericTimeout" : 5000
+}];

@@ -1,9 +1,9 @@
 const http = require('http'),
+	logger = require('winston'),
 	EventEmmiter = require('events'),
 	HealthCheck = require('./health-check.js'),
 	httpProxy = require('http-proxy'),
 	argParams = process.argv.splice(2);
-
 
 const myEvents = new EventEmmiter();
 
@@ -11,25 +11,28 @@ let id = 0;
 
 const proxyServers = [{
 	id: id++,
-	status: 0,
+	status: -1,
 	target: 'http://localhost:8001',
 	proxyTimeout: 2000,
-	path: '/res/read/rest/vehicle?vrn=NO_REG',
-	event: myEvents
+	teatQuery: '/res/read/rest/vehicle?vrn=NO_REG',
+	event: myEvents,
+	genericTimeout : 5000
 }, {
 	id: id++,
-	status: 0,
+	status: -1,
 	target: 'http://localhost:8002',
-	path: '/res/read/rest/vehicle?vrn=NO_REG',
+	teatQuery: '/res/read/rest/vehicle?vrn=NO_REG',
 	proxyTimeout: 2000,
-	event: myEvents
+	event: myEvents,
+	genericTimeout : 5000
 }, {
 	id: id++,
-	status: 0,
+	status: -1,
 	target: 'http://localhost:8003',
-	path: '/res/read/rest/vehicle?vrn=NO_REG',
+	teatQuery: '/res/read/rest/vehicle?vrn=NO_REG',
 	proxyTimeout: 2000,
-	event: myEvents
+	event: myEvents,
+	genericTimeout : 5000
 }];
 
 const proxy = httpProxy.createProxyServer();
@@ -59,8 +62,9 @@ function validContentType(headers) {
 }
 
 // we should have only one of those ... 
-myEvents.once('proxyActive', () => {
+myEvents.once('proxyActive', (msg) => {
 	let nextServerId = 0;
+	logger.info(`activating proxy because one server is active ${proxyServers[msg.serverId].target}`);
 	// we now start the listenning for inbound connections 
 	http.createServer(function (req, res) {
 		let inactive = 0;
@@ -85,10 +89,11 @@ myEvents.once('proxyActive', () => {
 
 				proxy.web(req, res, proxyServers[nextServerId]);
 			} else {
+				logger.warn(`no available servers ...  about to terminate `);
 				myEvents.emit('error', {
 					serverId: nextServerId
 				});
-				res.statusCode = 400;
+				res.statusCode = 503;
 				res.end();
 			}
 
@@ -97,6 +102,7 @@ myEvents.once('proxyActive', () => {
 			// peek next one ..
 			nextServerId = (nextServerId + 1) % proxyServers.length;
 		} else {
+			logger.warn(`received a bad request `);
 			res.statusCode = 400;
 			res.end();
 		}
@@ -111,7 +117,7 @@ myEvents.on('active', (msg) => {
 
 myEvents.on('error', (msg) => {
 	let activeCounter = 0;
-	console.log(msg);
+
 	proxyServers[msg.serverId].status = 0;
 
 	console.log(JSON.stringify(msg));
@@ -120,7 +126,8 @@ myEvents.on('error', (msg) => {
 	proxyServers.forEach((entry) => {
 		activeCounter += entry.status;
 	});
-	console.log(JSON.stringify(msg), activeCounter);
+	logger.warn(`server ${proxyServers[msg.serverId].target} is offline - still we have ${activeCounter} servers`);
+
 	if (activeCounter === 0) {
 		myEvents.emit('end');
 	}
@@ -128,11 +135,14 @@ myEvents.on('error', (msg) => {
 });
 
 myEvents.once('end', () => {
+	logger.error(`no active servers terminating`);
 	// create alert ... 
 
 	// terminate 
 	process.exit(1);
 });
+
+logger.info(`satrting monitor health checks`);
 
 HealthCheck.test(proxyServers[0]);
 HealthCheck.test(proxyServers[1]);
