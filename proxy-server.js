@@ -42,7 +42,7 @@ const proxyServers = [{
 }, {
 	id: id++,
 	status: -1,
-	target: 'http://localhost:8002',
+	target: 'http://aah2rb04:8884',
 	teatQuery: '/res/read/rest/vehicle?vrn=NO_REG',
 	proxyTimeout: 2000,
 	event: myEvents,
@@ -50,7 +50,7 @@ const proxyServers = [{
 }, {
 	id: id++,
 	status: -1,
-	target: 'http://localhost:8003',
+	target: 'http://aah2rb04:8894',
 	teatQuery: '/res/read/rest/vehicle?vrn=NO_REG',
 	proxyTimeout: 2000,
 	event: myEvents,
@@ -90,8 +90,9 @@ myEvents.once('proxyActive', (msg) => {
 	// we now start the listenning for inbound connections 
 	http.createServer(function (req, res) {
 		let inactive = 0;
-		const validContent = regTest.test(req.headers['content-type'] || req.headers['Content-Type']);
-		console.log(regTest.test(req.headers['content-type'] || req.headers['Content-Type']));
+		const clientIp = req.headers['x-forwarded-for'] || req.connection.remoteAddress;
+		const validContent = regTest.test(req.headers['content-type'] || req.headers['Content-Type']) || req.url==='/res/read/rest/healthCheck';
+		logger.info(`${regTest.test(req.headers['content-type'] || req.headers['Content-Type'])}, ${req.connection.remoteAddress}`);
 
 		if (validContent) {
 
