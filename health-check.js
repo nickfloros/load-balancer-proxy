@@ -66,7 +66,7 @@ class HealthCheck {
           type: 'connection'
         });
       })
-    }, 3000);
+    }, 10000);
   }
 
 }

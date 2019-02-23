@@ -1,9 +1,12 @@
 const http = require('http'),
+ keepAliveAgent = new http.Agent({keepAlive:true}),
 	winston = require('winston'),
 	EventEmmiter = require('events'),
 	HealthCheck = require('./health-check.js'),
 	httpProxy = require('http-proxy'),
 	argParams = process.argv.splice(2);
+
+http.globalAgent = keepAliveAgent;
 
 const logger = winston.createLogger({
 	level: 'info',
@@ -34,16 +37,24 @@ let id = 0;
 const proxyServers = [{
 	id: id++,
 	status: -1,
-	target: 'http://localhost:8001',
+	target: 'http://aah2rb03:8894',
 	proxyTimeout: 2000,
-	teatQuery: '/res/read/rest/vehicle?vrn=NO_REG',
+	testQuery: '/res/read/rest/vehicle?vrn=NO_REG',
 	event: myEvents,
 	genericTimeout: 5000
 }, {
 	id: id++,
 	status: -1,
+	target: 'http://aah2rf03:8894',
+	proxyTimeout: 2000,
+	testQuery: '/res/read/rest/vehicle?vrn=NO_REG',
+	event: myEvents,
+	genericTimeout: 5000
+},{
+	id: id++,
+	status: -1,
 	target: 'http://aah2rb04:8884',
-	teatQuery: '/res/read/rest/vehicle?vrn=NO_REG',
+	testQuery: '/res/read/rest/vehicle?vrn=NO_REG',
 	proxyTimeout: 2000,
 	event: myEvents,
 	genericTimeout: 5000
@@ -51,7 +62,7 @@ const proxyServers = [{
 	id: id++,
 	status: -1,
 	target: 'http://aah2rb04:8894',
-	teatQuery: '/res/read/rest/vehicle?vrn=NO_REG',
+	testQuery: '/res/read/rest/vehicle?vrn=NO_REG',
 	proxyTimeout: 2000,
 	event: myEvents,
 	genericTimeout: 5000
